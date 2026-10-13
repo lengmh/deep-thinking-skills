@@ -24,6 +24,11 @@ tool calls does not create more obligations.
 
 Use `tools/research_state.py` only for Full. It supports `init`, `checkpoint`,
 `finalize`, `resume`, and `validate`; use `--state-dir` for tests or an isolated run.
+Initialize the Research Run successfully before substantive research. If the state tool is
+unavailable, no writable state directory can be used, or `init` fails, report that Full
+cannot proceed under its contract. Do not silently downgrade to Standard or claim that a
+Research Run exists; the user may explicitly choose Standard or provide a usable state
+directory or tool.
 Each Research Run has a single writer. Concurrent writes fail immediately with
 `research run is busy`; they do not wait, retry, or overwrite another update. A process
 killed while writing may leave `.<run-id>.lock`; remove it manually only after confirming
