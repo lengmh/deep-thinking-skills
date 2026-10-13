@@ -10,5 +10,6 @@ For an unresolved conclusion, distinguish:
 - `stopped_budget`: an agreed cost or time boundary was reached;
 - `invalidated_question`: the premise or decision frame no longer holds.
 
-Give the answer, key grounding, scope, limits, reversal condition when relevant, and the
-single next action with the highest information or decision value.
+Give the answer, key grounding, scope, limits, and reversal condition when relevant.
+Include the single next action with the highest information or decision value only when
+further action is needed; a completed task does not require follow-up work.

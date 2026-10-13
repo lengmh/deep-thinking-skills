@@ -48,6 +48,12 @@ discriminating evidence, or asking a focused question for indispensable informat
 the user can supply. Update the judgment and remaining uncertainty from what is learned.
 Do not invent rounds, tool calls, or questions merely to appear thorough.
 
+Repeat a read, check, or computation when it serves an unfinished verification purpose
+that could materially affect the judgment. Reusing a command or obtaining an unchanged
+result can still be useful: a changed artifact, an unresolved ambiguity, or an independent
+check may need verification. Once that purpose is satisfied, do not repeat work merely
+to accumulate confirmations.
+
 ## Update and converge
 
 State what evidence would reverse the current judgment. Revise or withdraw when
@@ -65,5 +71,7 @@ reached, state what remains unresolved and what would enable progress. Do not pr
 work to meet a round count, search quota, reading quota, or process record.
 
 Answer with the real question, decisive grounding, a clear or conditional judgment,
-the fragile assumption or reversal condition, and the next action with the highest
-information or decision value. Do not expose private chain-of-thought.
+and the fragile assumption or reversal condition when relevant. Include the next action
+with the highest information or decision value only when further action is needed.
+When the task is complete, conclude without inventing follow-up work. Do not expose
+private chain-of-thought.
