@@ -1,0 +1,40 @@
+# Local environment and authentication
+.env
+.env.*
+!.env.example
+!.env.template
+/auth.json
+/credentials.json
+/secrets.json
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Local agent and editor state
+/.codex/
+/.claude/
+/.serena/
+/.planning/
+/.vscode/
+/.idea/
+/benchmark/
+
+# Local environments and generated outputs
+/.venv/
+/.uv-cache/
+/dist/
+/build/
+/unpacked/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+.coverage.*
+htmlcov/
+.DS_Store
+Thumbs.db
+*.swp
+*~

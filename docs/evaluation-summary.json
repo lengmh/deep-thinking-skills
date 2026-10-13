@@ -1,0 +1,310 @@
+{
+  "schema": "deep-thinking-evaluation-summary-v1",
+  "date": "2026-10-13",
+  "tested_commits": {
+    "A": null,
+    "C": "3efc62e05f8af61f56bf66ee3a392e02c689b775",
+    "Cv2": "6dce1a7b0e605985f1d710d1e22b76a6a1a2bf4c"
+  },
+  "profile": "standard",
+  "requested_model": "gpt-6.1-sol",
+  "effort": "max",
+  "cli_version": "0.162.0-alpha.2",
+  "host": "Linux/WSL",
+  "case_count": 8,
+  "selected_valid_scored_answers": 24,
+  "scores": {
+    "T01_poly": {
+      "A": {
+        "correctness": 4,
+        "evidence": 3,
+        "completion": 2,
+        "quality_subtotal": 9,
+        "efficiency": 1,
+        "total": 10
+      },
+      "C": {
+        "correctness": 4,
+        "evidence": 3,
+        "completion": 2,
+        "quality_subtotal": 9,
+        "efficiency": 1,
+        "total": 10
+      },
+      "Cv2": {
+        "correctness": 4,
+        "evidence": 3,
+        "completion": 2,
+        "quality_subtotal": 9,
+        "efficiency": 1,
+        "total": 10
+      }
+    },
+    "T02_hankel": {
+      "A": {
+        "correctness": 4,
+        "evidence": 3,
+        "completion": 2,
+        "quality_subtotal": 9,
+        "efficiency": 1,
+        "total": 10
+      },
+      "C": {
+        "correctness": 4,
+        "evidence": 3,
+        "completion": 2,
+        "quality_subtotal": 9,
+        "efficiency": 1,
+        "total": 10
+      },
+      "Cv2": {
+        "correctness": 4,
+        "evidence": 3,
+        "completion": 2,
+        "quality_subtotal": 9,
+        "efficiency": 1,
+        "total": 10
+      }
+    },
+    "T03_growth_fit": {
+      "A": {
+        "correctness": 4,
+        "evidence": 3,
+        "completion": 2,
+        "quality_subtotal": 9,
+        "efficiency": 1,
+        "total": 10
+      },
+      "C": {
+        "correctness": 4,
+        "evidence": 3,
+        "completion": 2,
+        "quality_subtotal": 9,
+        "efficiency": 1,
+        "total": 10
+      },
+      "Cv2": {
+        "correctness": 4,
+        "evidence": 3,
+        "completion": 2,
+        "quality_subtotal": 9,
+        "efficiency": 1,
+        "total": 10
+      }
+    },
+    "T04_network_model": {
+      "A": {
+        "correctness": 4,
+        "evidence": 3,
+        "completion": 2,
+        "quality_subtotal": 9,
+        "efficiency": 1,
+        "total": 10
+      },
+      "C": {
+        "correctness": 4,
+        "evidence": 3,
+        "completion": 2,
+        "quality_subtotal": 9,
+        "efficiency": 1,
+        "total": 10
+      },
+      "Cv2": {
+        "correctness": 4,
+        "evidence": 3,
+        "completion": 2,
+        "quality_subtotal": 9,
+        "efficiency": 1,
+        "total": 10
+      }
+    },
+    "T05_method_transfer": {
+      "A": {
+        "correctness": 4,
+        "evidence": 3,
+        "completion": 2,
+        "quality_subtotal": 9,
+        "efficiency": 1,
+        "total": 10
+      },
+      "C": {
+        "correctness": 4,
+        "evidence": 3,
+        "completion": 2,
+        "quality_subtotal": 9,
+        "efficiency": 1,
+        "total": 10
+      },
+      "Cv2": {
+        "correctness": 4,
+        "evidence": 3,
+        "completion": 2,
+        "quality_subtotal": 9,
+        "efficiency": 1,
+        "total": 10
+      }
+    },
+    "T06_model_audit": {
+      "A": {
+        "correctness": 4,
+        "evidence": 3,
+        "completion": 2,
+        "quality_subtotal": 9,
+        "efficiency": 1,
+        "total": 10
+      },
+      "C": {
+        "correctness": 4,
+        "evidence": 3,
+        "completion": 2,
+        "quality_subtotal": 9,
+        "efficiency": 1,
+        "total": 10
+      },
+      "Cv2": {
+        "correctness": 4,
+        "evidence": 3,
+        "completion": 2,
+        "quality_subtotal": 9,
+        "efficiency": 1,
+        "total": 10
+      }
+    },
+    "X07_finite_field": {
+      "A": {
+        "correctness": 4,
+        "evidence": 3,
+        "completion": 2,
+        "quality_subtotal": 9,
+        "efficiency": 1,
+        "total": 10
+      },
+      "C": {
+        "correctness": 4,
+        "evidence": 3,
+        "completion": 2,
+        "quality_subtotal": 9,
+        "efficiency": 1,
+        "total": 10
+      },
+      "Cv2": {
+        "correctness": 4,
+        "evidence": 3,
+        "completion": 2,
+        "quality_subtotal": 9,
+        "efficiency": 1,
+        "total": 10
+      }
+    },
+    "X08_dataset_modeling": {
+      "A": {
+        "correctness": 4,
+        "evidence": 3,
+        "completion": 2,
+        "quality_subtotal": 9,
+        "efficiency": 1,
+        "total": 10
+      },
+      "C": {
+        "correctness": 4,
+        "evidence": 3,
+        "completion": 2,
+        "quality_subtotal": 9,
+        "efficiency": 1,
+        "total": 10
+      },
+      "Cv2": {
+        "correctness": 4,
+        "evidence": 3,
+        "completion": 2,
+        "quality_subtotal": 9,
+        "efficiency": 1,
+        "total": 10
+      }
+    }
+  },
+  "runtime_excluded_from_version_comparison": true,
+  "original_scores_preserved": true,
+  "score_source_lineage": [
+    {
+      "case_ids": [
+        "T01_poly"
+      ],
+      "original_score_file_sha256": "c697c900c6363099b035ab8d052bc4ab57763463db83a67f7fb2fd2957c41c2e",
+      "condition": "same_cohort"
+    },
+    {
+      "case_ids": [
+        "T02_hankel"
+      ],
+      "original_score_file_sha256": "ca9d57c7b9c321d27890bcbfef9b54030aa6f60fa813294101f94dde03ddeb3b",
+      "condition": "same_cohort"
+    },
+    {
+      "case_ids": [
+        "T03_growth_fit"
+      ],
+      "original_score_file_sha256": "e91ff2da89433b22f705dec0515b7c6e0b8848a36e4865adf1f28bf475db7561",
+      "condition": "T03_C_Cv2_two_answer_review"
+    },
+    {
+      "case_ids": [
+        "T03_growth_fit"
+      ],
+      "original_score_file_sha256": "7e7317d7247cb43cecf8b676760ebed9cb0574a26b071ce7bfc84bb3462fc846",
+      "condition": "T03_A_later_retry_separate_review_runtime_excluded"
+    },
+    {
+      "case_ids": [
+        "T04_network_model"
+      ],
+      "original_score_file_sha256": "f766dc0dc960b267c78d0b97ad949de7e6bdb6e0c34fe83d207327a189243fdc",
+      "condition": "T04_authorized_same_thread_network_resume"
+    },
+    {
+      "case_ids": [
+        "T05_method_transfer"
+      ],
+      "original_score_file_sha256": "61eae62efcc3e35350dfb1ef41db8db9ef3e1d5870121890acdf2cc2dc426c84",
+      "condition": "same_cohort"
+    },
+    {
+      "case_ids": [
+        "T06_model_audit"
+      ],
+      "original_score_file_sha256": "3d68033f22ce08d1c95b5391132eddc3de20c81a0a625fc11fd7e674dcc5d741",
+      "condition": "same_cohort"
+    },
+    {
+      "case_ids": [
+        "X07_finite_field"
+      ],
+      "original_score_file_sha256": "01b014b39f5041e6851a2d88658e4c2a30bb1d680c0b6e4eb8a4e633ae183349",
+      "condition": "same_cohort"
+    },
+    {
+      "case_ids": [
+        "X08_dataset_modeling"
+      ],
+      "original_score_file_sha256": "e4e8ff0b8b084f53e439dac50568c671af3dc89feade5eb33cb3a582c3ed4184",
+      "condition": "same_cohort_native_transport_reconnect"
+    }
+  ],
+  "scientific_quality_scale": {
+    "correctness": 4,
+    "evidence": 3,
+    "completion": 2,
+    "efficiency": 1
+  },
+  "Cv2_incremental_benefit_demonstrated": false,
+  "limitations": [
+    "Selected completed answers only; blocked and incomplete attempts remain unscored and are preserved separately.",
+    "T03 A is from a later fresh retry and separate anonymous review; C/Cv2 were reviewed together. Scientific content may compare, runtime is excluded; this is not a new common-round three-answer review.",
+    "T04 independent review includes an explicitly authorized continuation after transport failure; X08 final reviewer had one native reconnect and then completed normally.",
+    "Single requested model, max effort, few repeats and ceiling effects; budgets and provider routes differ across cases.",
+    "Actual task comparisons cover Standard, not a new full-profile L3 campaign, cross-host certification or causal superiority/equivalence.",
+    "X08 uses a frozen 426-row anonymous CSV; equivalence to the inaccessible original endpoint is unverified.",
+    "Original transcripts, tool payloads, images and host configuration are not distributed. This summary cannot replay all original experiments."
+  ],
+  "dataset_sha256": "f6a12f3a8567de07d91e12975936c6d593dafea900bbaabfc2badf51b5932120"
+}

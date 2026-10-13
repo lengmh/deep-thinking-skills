@@ -1,0 +1,63 @@
+{
+  "adapter_hash": "8989150463d1bded19cbc597edfafd4c6d431e23c0e2b0e9130ddb2905189693",
+  "artifact_tree_hash": "3c411bca72f59efdf30bf36cc0d07de506ae2c274dc74e1c2f8a9fb0fb34651f",
+  "files": [
+    {
+      "path": "SKILL.md",
+      "sha256": "1aec1ee3718bb8a448577f84edc3b4dec3a2d52035386ff1943bfedd0f22a4ba",
+      "size": 2578
+    },
+    {
+      "path": "agents/openai.yaml",
+      "sha256": "8989150463d1bded19cbc597edfafd4c6d431e23c0e2b0e9130ddb2905189693",
+      "size": 267
+    },
+    {
+      "path": "references/adversarial-checks.md",
+      "sha256": "5c2eb74bd00284c4e40efd83178293b8e224b57d23cc2514a3a9ad7425732848",
+      "size": 782
+    },
+    {
+      "path": "references/claim-evidence-model.md",
+      "sha256": "a80b5e6fb83660d0ca42df2bfabcf14ac3b5292c7c154f433886d85ceb058d61",
+      "size": 739
+    },
+    {
+      "path": "references/epistemic-kernel.md",
+      "sha256": "f6eaaef54a417ea5f8e0c8d99bb628a2decb94c600b408c82c9fbc3d8bb44292",
+      "size": 4134
+    },
+    {
+      "path": "references/profile-full.md",
+      "sha256": "295bd876099cef7751f1c1445002cdeff2bde24017815cab586ef98523192d92",
+      "size": 3377
+    },
+    {
+      "path": "references/profile-lite.md",
+      "sha256": "c5be3e2f66a940ec4d8d144a19cb40dc68640ac788e54d05131615bd02508935",
+      "size": 847
+    },
+    {
+      "path": "references/profile-standard.md",
+      "sha256": "1c471827679d27bb5a260cf622ecd1c697f532f952df4b595dd9fae294883c31",
+      "size": 1613
+    },
+    {
+      "path": "references/synthesis-stopping.md",
+      "sha256": "f042431118a5765c979eed9dfbf7250a42ee1835c99e66270c8649262b39615a",
+      "size": 754
+    },
+    {
+      "path": "schemas/research-run.schema.json",
+      "sha256": "39027c3999bf35b0165d744c7d53b5e22428e3eb453f83270864b27d1bed0a8c",
+      "size": 9157
+    },
+    {
+      "path": "tools/research_state.py",
+      "sha256": "e63611285de08e1732c044a1a0f89089e621839e27c6137a9a6e8760ea77a412",
+      "size": 37494
+    }
+  ],
+  "instruction_hash": "a400773b2de2840afb5fa4c69a0fb420af031d03f8bef55cb3092fc074632a4e",
+  "schema": "deep-thinking-package-manifest-v1"
+}

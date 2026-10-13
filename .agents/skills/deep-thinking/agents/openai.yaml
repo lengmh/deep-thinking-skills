@@ -1,0 +1,6 @@
+interface:
+  display_name: "Deep Thinking"
+  short_description: "Explicit research-quality reasoning"
+  default_prompt: "Use $deep-thinking standard to examine this decision with calibrated evidence and a clear conclusion."
+policy:
+  allow_implicit_invocation: false
