@@ -1,21 +1,21 @@
 # 模式说明
 
-三种模式共享同一认识论内核。区别在于判断跟踪和恢复方式，模式选择不构成能力高低承诺。
+三种模式采用同一套证据判断原则，区别在于如何跟踪判断和恢复研究记录。选择 Full 本身不保证更高的答案质量。
 
-| 合同 | Lite | Standard | Full |
+| 要求 | Lite | Standard | Full |
 |---|---|---|---|
-| 选择方式 | 显式 `lite` | 显式 `standard` 或无模式参数 | 显式 `full` |
-| 持久 Research Run | 禁止 | 禁止 | 必需 |
-| Checkpoint | 不要求 | 事件触发 | 实质认识论转换 |
-| 类型化终态与状态 CLI | 禁止 | 禁止 | 必需 |
-| Retro | 禁止要求 | 禁止要求 | 仅例外事件触发 |
+| 选择方式 | 显式 `lite` | 显式 `standard` 或不指定模式 | 显式 `full` |
+| 持久研究记录（Research Run） | 不允许 | 不允许 | 必须 |
+| 检查点（Checkpoint） | 不要求 | 按事件触发 | 记录实质变化 |
+| 预定义的结束状态与状态 CLI | 不允许 | 不允许 | 必须 |
+| 复盘（Retro） | 不要求 | 不要求 | 仅在例外事件发生时触发 |
 
-Lite 提供简短判断和必要的反转条件，不因缺少流程记录拒绝可解决任务。Standard 只在判断、关键假设、证据关系、范围或交接等实质变化时保留必要状态，不逐批要求记录或审批。
+Lite 给出简短判断和可能改变结论的条件，不因缺少流程记录而拒绝可解决的任务。Standard 只在判断、关键假设、证据关系、范围或交接等发生实质变化时跟踪必要信息，不要求每批记录或审批。
 
-Full 先成功初始化独立 Research Run，再开展实质研究。它记录问题、研究目标、假设、证据、独立性关系、当前判断、Checkpoint 和终态；初始化失败时报告合同阻塞，不静默切换为 Standard。运行有单写入者，同一 Run 的并发写立即失败。终结前至少有一个实质 Checkpoint，终态判断绑定最新 Checkpoint。
+Full 必须先成功初始化独立的 Research Run，再开展实质研究。记录包括问题、研究目标、假设、证据及其独立性、当前判断、检查点和结束状态。初始化失败时说明无法继续，不自动切换为 Standard。同一 Run 只允许一个进程写入，并发写入立即失败。结束前至少记录一个实质检查点，结束时的判断必须与最新检查点一致。
 
-Full 的 Schema 当前为 v4。CLI 对旧 v1/v2/v3 状态拒绝猜测迁移；历史回放应使用捕获该运行时的包。状态 provenance 是本地记录，不是宿主选择 Skill 的认证证明。
+Full 当前使用 Schema v4。CLI 不会为 v1/v2/v3 状态猜测迁移方式；回放旧记录时，应使用当时保存的包。状态中的调用来源只是本地记录，不能据此确认宿主是否实际加载了 Skill。
 
-Skill 不维护全局活动模式，不因普通请求或任务复杂度自动激活。输出给出结论、关键依据、限制或反转条件；仅在仍需行动时给出下一步，不暴露私有思维链。
+Skill 不维护全局活动模式，也不会因普通请求或任务复杂度自动激活。回答包含结论、关键依据、限制或可能改变结论的条件；只有仍需行动时才给出下一步，不暴露私有思维链。
 
-可执行合同分别位于 [Lite](../.agents/skills/deep-thinking/references/profile-lite.md)、[Standard](../.agents/skills/deep-thinking/references/profile-standard.md) 和 [Full](../.agents/skills/deep-thinking/references/profile-full.md)。
+完整模式规则见 [Lite](../.agents/skills/deep-thinking/references/profile-lite.md)、[Standard](../.agents/skills/deep-thinking/references/profile-standard.md) 和 [Full](../.agents/skills/deep-thinking/references/profile-full.md)。

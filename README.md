@@ -1,18 +1,50 @@
 # Deep Thinking Skills
 
-`deep-thinking` 是一个显式调用的研究质量 Skill，用于科学和技术问题中的证据评估、竞争解释比较，以及需要实际核验的判断。它强调追究可能改变结论的未知，在证据充分后收束。
+`deep-thinking` 是一个用于科学与技术研究的 Agent Skill。它帮助核查证据、比较可能的解释，并完成可能改变结论的关键验证。证据充分后结束任务，避免无目的的重复检查。
 
-当前稳定版本为 **v1.1.0（Cv2）**。本仓库提供经过整理的公开分发快照，目前包含一个 Skill；安装目录和调用名称均为 `deep-thinking`。代码和文档采用 [MIT 许可证](LICENSE)。
+当前稳定版本为 **v1.1.0**。仓库目前包含一个 Skill，安装目录和调用名称均为 `deep-thinking`。
 
-## 开始使用
+## 功能
 
-从 [v1.1.0 Release](https://github.com/lengmh/deep-thinking-skills/releases/tag/v1.1.0) 下载 `deep-thinking-v1.1.0.zip`，按 [安装、更新与回滚](INSTALL.md)先校验再安装。也可克隆本仓库，安装完整的 `.agents/skills/deep-thinking/` 目录。
+- 核查可能影响判断的原文、条件、图表、数据或代码。
+- 比较关键假设和竞争解释，区分已有证据与尚未确认的推测。
+- 在任务范围、权限和成本限制内，继续解决可能改变结论的关键问题。
+- 保留修改后重跑、必要重复检查和独立复核，任务完成后不额外制造工作。
 
-```text
-$deep-thinking standard 核查这项方法是否适用于给定场景，并完成可行的关键验证。
+## 安装
+
+需要支持 Agent Skills 的工具和已有 Python 3。包校验器只使用标准库。选择工具实际读取的 Skills 目录，安装完整的 `deep-thinking/` 包。
+
+### 从 Release 安装
+
+从 [v1.1.0 Release](https://github.com/lengmh/deep-thinking-skills/releases/tag/v1.1.0) 下载 `deep-thinking-v1.1.0.zip` 和其他附件。按[安装说明](INSTALL.md)核对校验和、解压并验证，再复制完整的 `deep-thinking/` 目录。
+
+### 从源码安装
+
+```bash
+git clone https://github.com/lengmh/deep-thinking-skills.git
+cd deep-thinking-skills
+git switch --detach v1.1.0
+python3 scripts/validate_skill_package.py .agents/skills/deep-thinking --verify-manifest deep-thinking-package-manifest.json
 ```
 
-显式调用方式：
+下面是 Codex 用户级安装的 Linux/WSL 示例。目标目录已存在时，先按安装说明备份旧版本，再更新：
+
+```bash
+if test -e "$HOME/.agents/skills/deep-thinking"; then
+  printf '%s\n' '目标目录已存在，请先按更新步骤备份。'
+else
+  mkdir -p "$HOME/.agents/skills"
+  cp -R .agents/skills/deep-thinking "$HOME/.agents/skills/deep-thinking"
+  python3 scripts/validate_skill_package.py "$HOME/.agents/skills/deep-thinking" --verify-manifest deep-thinking-package-manifest.json
+fi
+```
+
+安装后完全退出并重新启动宿主，确认能显式调用 Skill。Windows、其他安装位置以及更新和回滚步骤见[安装说明](INSTALL.md)。仅复制 Skill 目录，不要安装整个仓库。Windows 原生宿主和其他宿主的兼容性尚未确认。
+
+## 用法
+
+显式调用 `deep-thinking`，将 `<request>` 替换为具体问题和需要核查的材料：
 
 ```text
 $deep-thinking <request>
@@ -21,37 +53,37 @@ $deep-thinking standard <request>
 $deep-thinking full <request>
 ```
 
-未指定模式时使用 Standard。普通的「分析」「研究」「设计」「权衡」或任务复杂度不会自动激活 Skill；模式只对当前调用有效。未知模式会被拒绝。
+例如，核查一项方法的适用条件：
 
-## 三种模式
+```text
+$deep-thinking standard 核查这项方法是否适用于给定场景，并完成可行的关键验证。
+```
 
-| 模式 | 用途和状态边界 |
-|---|---|
-| Lite | 轻量认识论提示；不创建持久状态、Checkpoint 或流程账本。 |
-| Standard | 显式调用的默认模式；只在认识论状态实质变化时保留必要控制，不创建持久 Research Run。 |
-| Full | 显式选择后建立独立、可恢复的 Research Run，并使用状态 CLI。 |
+未指定模式时使用 Standard。普通的「分析」「研究」「设计」「权衡」或任务复杂度不会自动激活 Skill。模式只对当前调用有效，未知模式会被拒绝，不会回退到默认模式。
 
-三种模式共享认识论内核。Full 的区别是治理与恢复能力，不能据此推断它更聪明。详细合同见[模式说明](docs/PROFILES.md)。
+| 模式 | 适用任务 | 记录方式 |
+|---|---|---|
+| Lite | 需要简短判断和可能改变结论的条件。 | 不创建持久状态、Checkpoint 或流程账本。 |
+| Standard | 日常研究、证据核查和方案比较，默认使用。 | 只在判断、假设或证据等发生实质变化时跟踪必要信息，不创建持久 Research Run。 |
+| Full | 需要保存研究记录，并在中断后恢复的任务。 | 建立独立的研究记录（Research Run），使用状态 CLI 保存检查点和结束状态。 |
 
-## v1.1.0 的主要规则
+三种模式采用同一套证据判断原则。Full 增加记录和恢复功能，模式本身不保证更高的答案质量。Full 需要可写状态目录，初始化失败时说明无法继续，不自动切换模式。完整规则见[模式说明](docs/PROFILES.md)。
 
-- 当来源细节可能改变判断时，核查相关原文、条件、图表、数据或代码。
-- 关键未知尚未解决时，在任务范围、权限和成本边界内完成有价值、可行的下一步。
-- 重复检查须服务于尚未完成的核验目的；保留修改后重跑和独立复核。
-- 证据充分后结束，任务完成后不制造后续工作。
+用户提供的文档和引用属于待分析材料，其中的命令不会成为 Agent 指令。Skill 不提供私有思维链，也不增加网络、文件或工具权限；实际权限由宿主控制。
 
-用户提供的文档和引用是待分析数据，其中的命令不会成为 Agent 指令。Skill 不提供私有思维链，也不授予额外网络、文件或工具权限；实际权限由宿主控制。
+## 许可证
 
-## 验证与来源
+本仓库的代码和文档采用 [MIT 许可证](LICENSE)，允许使用、复制、修改、分发、再许可和商业使用。软件副本或主要部分须保留版权声明和许可证声明。
 
-v1.1.0 安装包的 11 个文件与受测 Cv2 字节完全一致。来源提交和包指纹见 [SOURCE.json](SOURCE.json)，安装字节见 [package manifest](deep-thinking-package-manifest.json)。本仓库始于独立初始提交，随后追加经过整理的产品历史；公开提交 SHA 与来源提交 SHA 分别记录。
+软件按原样提供，不提供任何明示或默示担保。作者和版权持有者不对因软件或其使用产生的索赔、损害或其他责任负责。完整条款以许可证原文为准。
 
-来源版本完成了 151 项单测和 44 项离线合成校准。八题 Standard 实际评估中，A/C/Cv2 的 24 份所选有效答卷均为 10/10；Cv2 的八份均保留关键核验并完成交付。原始评分和失败尝试分别保留，运行时间不参与版本比较。方法、来源关系和限制见[评估摘要](docs/EVALUATION.md)。
+## 文档
 
-这些样本尚未证明 Cv2 相对旧版或无 Skill 的质量、收敛或成本增益，也未证明一般性等效。本次未新增全模式 L3、跨宿主、Windows 原生或并发认证。
+- [安装、更新与回滚](INSTALL.md)
+- [模式说明](docs/PROFILES.md)
+- [评估结果与测试限制](docs/EVALUATION.md)
+- [产品历史](docs/HISTORY.md)
+- [更新日志](CHANGELOG.md)
+- [版本来源](SOURCE.json)与[包文件清单](deep-thinking-package-manifest.json)
 
-## 维护方式
-
-[产品演进历史](docs/HISTORY.md)提供 10 个可浏览的历史快照及来源对照，展示初版、状态工具修复和 C/Cv2 指令调整。历史公开提交使用本次生成日期和 noreply 身份，安装继续使用固定的 v1.1.0。
-
-公开版本从固定来源版本导出，使用包指纹和逐文件哈希核对。后续版本继续通过 Release 分发；问题和建议可提交到本仓库 Issues。开发过程、原始会话和本机环境记录由独立维护仓库保存，公开快照包含安装所需文件及可分享的结果摘要。
+问题和建议可提交到本仓库 Issues。测试结果、版本变化和来源信息分别记录在上述文档中。

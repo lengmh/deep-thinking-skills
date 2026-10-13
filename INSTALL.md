@@ -1,26 +1,26 @@
 # 安装、更新与回滚
 
-仅安装完整的 `deep-thinking/` 包目录。入口、adapter、references、Schema 和状态工具共 11 个文件，须保持完整。
+安装完整的 `deep-thinking/` 目录。入口、宿主配置、参考文档、Schema 和状态工具共 11 个文件，必须保持完整。
 
-## 前置条件
+## 安装前准备
 
-- 使用支持 Agent Skills 的宿主，并确认宿主实际使用的 Skills 根目录。
-- 准备已有 Python 3；校验器仅使用标准库。
-- 更新前确认目标安装目录，并将现有目录备份到明确命名的位置。
+- 使用支持 Agent Skills 的工具，并确认工具实际读取的 Skills 目录。
+- 准备已有 Python 3；校验器只使用标准库。
+- 更新前确认安装目录，将现有版本备份到明确命名的位置。
 
-实际验证环境为 Linux/WSL 和 Codex CLI `0.162.0-alpha.2`。下列 Windows 步骤采用标准文件操作，但本版本尚未取得 Windows 原生宿主认证。
+已验证的环境为 Linux/WSL 和 Codex CLI `0.162.0-alpha.2`。下列 Windows 步骤使用标准文件操作，Windows 原生宿主的兼容性尚未确认。
 
 ## 从 Release 安装
 
 1. 从 [v1.1.0 Release](https://github.com/lengmh/deep-thinking-skills/releases/tag/v1.1.0) 下载全部附件到独立目录。
-2. 在该目录核对 `SHA256SUMS`。Linux/WSL 使用：
+2. 在下载目录核对 `SHA256SUMS`。Linux/WSL 使用：
 
    ```bash
    sha256sum --check SHA256SUMS
    ```
 
    Windows 可使用 `Get-FileHash -Algorithm SHA256` 逐项比较文件与清单。
-3. 解压安装包并验证：
+3. 解压安装包，验证解压后的目录：
 
    ```bash
    python3 -m zipfile -e deep-thinking-v1.1.0.zip unpacked
@@ -28,12 +28,12 @@
    ```
 
    Windows 使用已有 Python 3 命令执行等价操作。
-4. 新安装时确认目标目录不存在，再复制完整 `unpacked/deep-thinking/`。更新时先移动旧安装目录到备份位置，再放入新目录。
-5. 用同一校验器和 manifest 验证实际安装目录，然后冷启动宿主并确认显式调用可发现。
+4. 新安装时，先确认目标目录不存在，再复制完整的 `unpacked/deep-thinking/`。目标目录已存在时，按下文的更新步骤处理。
+5. 用同一校验器和 manifest 检查实际安装目录，然后完全退出并重新启动宿主，确认能显式调用 Skill。
 
-校验或路径检查失败时停止安装，保留旧目录。校验和确认字节完整性，不是数字签名；从可信 Release 渠道取得附件。
+校验或路径检查失败时停止安装，保留旧目录。校验和只能检查文件完整性，不能替代数字签名；应从可信的 Release 渠道下载附件。
 
-## 从源码快照安装
+## 从源码安装
 
 ```bash
 git clone https://github.com/lengmh/deep-thinking-skills.git
@@ -42,7 +42,7 @@ git switch --detach v1.1.0
 python3 scripts/validate_skill_package.py .agents/skills/deep-thinking --verify-manifest deep-thinking-package-manifest.json
 ```
 
-新安装的 Linux/WSL 示例，确认目标尚不存在后执行：
+新安装的 Linux/WSL 示例，确认目标目录尚不存在后执行：
 
 ```bash
 if test -e "$HOME/.agents/skills/deep-thinking"; then
@@ -54,11 +54,11 @@ else
 fi
 ```
 
-示例在目标已存在时仅给出提示，不执行复制。更新已有目录时按上一节的备份步骤处理。
+目标目录已存在时，示例只显示提示，不复制文件。更新已有版本时，先按上一节备份旧目录。
 
-Codex 可使用用户级 Agent Skills 根 `~/.agents/skills/deep-thinking`；兼容根为 `$CODEX_HOME/skills/deep-thinking`。选择宿主实际发现的一个位置，避免同时保留不同字节的同名副本。其他宿主按其目录约定放置完整包，本项目未认证全部宿主。
+Codex 可使用用户级安装位置 `~/.agents/skills/deep-thinking`，也可使用兼容位置 `$CODEX_HOME/skills/deep-thinking`。选择宿主实际读取的一个位置，避免同时保留内容不同的同名副本。其他宿主按各自的目录约定安装，兼容性需另行确认。
 
-仓库根不是 Skill 根。不要把 `docs/`、`scripts/`、`.git/` 或整个 GitHub Source code 归档安装为 Skill。
+仅安装 Skill 目录。不要把 `docs/`、`scripts/`、`.git/` 或整个 GitHub Source code 归档作为 Skill 安装。
 
 ## 调用与模式
 
@@ -69,10 +69,19 @@ $deep-thinking standard <request>
 $deep-thinking full <request>
 ```
 
-无模式参数时使用 Standard。模式只对当前调用有效；未知模式拒绝而不回退。Full 需要可写状态目录，初始化失败时报告阻塞，不静默降级。详细边界见[模式说明](docs/PROFILES.md)。
+未指定模式时使用 Standard，模式只对当前调用有效。未知模式会被拒绝，不会回退到默认模式。Full 需要可写的状态目录；初始化失败时报告无法继续，不自动切换模式。具体要求见[模式说明](docs/PROFILES.md)。
 
-## 回滚
+## 更新
 
-恢复此前备份的精确安装目录，按其原 manifest 核验，再冷启动宿主确认显式调用可发现。也可下载保留的旧版本安装包。避免用宽泛通配符删除整个 Skills 根。
+1. 下载目标版本的安装包，按该版本的校验和、校验器和 manifest 检查文件。
+2. 确认实际安装目录，将现有目录移到明确命名的备份位置。
+3. 将新版的完整 `deep-thinking/` 目录放入原安装位置。
+4. 用新版校验器和 manifest 检查实际安装目录，再完全退出并重新启动宿主，确认能显式调用 Skill。
 
-v1.1.0 的 Full Schema 与状态 CLI 沿用 Cv2 的既有字节，本次公开分发不要求状态迁移。旧 Schema 运行记录须用当时捕获的包回放，不猜测迁移。
+校验失败时停止更新，保留旧版本备份。需要恢复时按下文操作。
+
+## 恢复旧版本
+
+恢复此前备份的安装目录，用旧版本的 manifest 校验，再完全退出并重新启动宿主，确认能显式调用 Skill。也可下载保留的旧版本安装包。不要用宽泛通配符删除整个 Skills 目录。
+
+v1.1.0 的 Full Schema 和状态 CLI 与 Cv2 相同，无需迁移状态。旧 Schema 的运行记录须用当时保存的包回放，不能猜测迁移方式。
