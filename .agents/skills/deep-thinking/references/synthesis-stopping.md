@@ -1,8 +1,7 @@
 # Synthesis and stopping
 
-Stop when available evidence supports a clear or conditional decision and the next action
-would not materially change it. Do not keep reading merely to produce locators, a longer
-process record, or a more elaborate terminal.
+Apply the shared [continuation and stopping principles](epistemic-kernel.md#update-and-converge).
+The terminal distinctions below are specific to Full.
 
 For an unresolved conclusion, distinguish:
 
