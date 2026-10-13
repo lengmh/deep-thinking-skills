@@ -892,17 +892,22 @@ def build_parser() -> argparse.ArgumentParser:
     init.add_argument("--external-effects", action="store_true")
     init.set_defaults(handler=command_init)
 
-    checkpoint = subparsers.add_parser("checkpoint")
+    checkpoint = subparsers.add_parser(
+        "checkpoint", formatter_class=argparse.RawTextHelpFormatter,
+        description="Record a material change. JSON arguments replace the complete named list; omitted lists remain unchanged.",
+        epilog="Use stable unique IDs. Evidence source must belong to its source_group; one source has one group owner. "
+               "Choose a kind supported by the actual delta; risk_or_action_changed requires changed next-action or risk. "
+               "A label alone is not a transition.")
     add_state_location(checkpoint)
     checkpoint.add_argument("--kind", choices=sorted(TRANSITION_KINDS), required=True)
     checkpoint.add_argument("--summary", required=True)
     checkpoint.add_argument("--judgment", required=True)
     checkpoint.add_argument("--next-action", default="Reassess the next discriminating action.")
     checkpoint.add_argument("--risk-level", choices=("low", "medium", "high"), default="medium")
-    checkpoint.add_argument("--claims-json")
-    checkpoint.add_argument("--hypotheses-json")
-    checkpoint.add_argument("--evidence-json")
-    checkpoint.add_argument("--independence-groups-json")
+    checkpoint.add_argument("--claims-json", help='JSON array: [{"id":"c1","kind":"user_claim","text":"Reported claim"}]. kind: ' + ", ".join(sorted(CLAIM_KINDS)))
+    checkpoint.add_argument("--hypotheses-json", help='JSON array: [{"id":"h1","summary":"Possible explanation","status":"active"}]. status: active or eliminated.')
+    checkpoint.add_argument("--evidence-json", help='JSON array: [{"id":"e1","source":"report","source_group":"g1","effect":"weaken"}]. effect: support, weaken or no_effect.')
+    checkpoint.add_argument("--independence-groups-json", help='JSON array: [{"id":"g1","sources":["report"]}]. Sources must be nonempty and uniquely owned.')
     checkpoint.set_defaults(handler=command_checkpoint)
 
     finalize = subparsers.add_parser("finalize")
