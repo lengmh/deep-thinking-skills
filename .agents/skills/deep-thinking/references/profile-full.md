@@ -11,8 +11,11 @@ real change in what is known or what should happen next; splitting one read into
 tool calls does not create more obligations.
 
 Use `tools/research_state.py` only for Full. It supports `init`, `checkpoint`,
-`finalize`, and `resume`; use `--state-dir` for tests or an isolated run. It never
-creates a global active mode.
+`finalize`, `resume`, and `validate`; use `--state-dir` for tests or an isolated run.
+Each Research Run has a single writer. Concurrent writes fail immediately with
+`research run is busy`; they do not wait, retry, or overwrite another update. A process
+killed while writing may leave `.<run-id>.lock`; remove it manually only after confirming
+that no writer is active. The tool never creates a global active mode.
 
 Terminal values are `answered`, `conditionally_answered`, `unresolved_evidence_limit`,
 `blocked_access`, `stopped_budget`, and `invalidated_question`. An unresolved terminal

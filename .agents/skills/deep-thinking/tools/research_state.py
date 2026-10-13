@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+from contextlib import contextmanager
 import json
 import os
 import re
@@ -121,6 +122,25 @@ def validate_run_id(run_id: Any) -> str:
 
 def state_path(directory: Path, run_id: str) -> Path:
     return directory / f"{validate_run_id(run_id)}.json"
+
+
+@contextmanager
+def run_lock(directory: Path, run_id: str):
+    run_id = validate_run_id(run_id)
+    path = directory / f".{run_id}.lock"
+    try:
+        descriptor = os.open(path, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
+    except FileExistsError as exc:
+        raise StateError(f"research run is busy: {run_id}") from exc
+    try:
+        os.write(descriptor, f"{os.getpid()}\n".encode("ascii"))
+        os.close(descriptor)
+        descriptor = -1
+        yield
+    finally:
+        if descriptor >= 0:
+            os.close(descriptor)
+        path.unlink(missing_ok=True)
 
 
 def parse_json_list(value: str | None, label: str) -> list[dict[str, Any]] | None:
@@ -254,6 +274,8 @@ def validate_state(state: Any) -> dict[str, Any]:
         nonempty(state["current_judgment"], "current judgment")
     validate_items(state)
 
+    transition_times: dict[str, datetime] = {}
+    previous_transition_at = created_at
     for index, transition in enumerate(state["transitions"], 1):
         if not isinstance(transition, dict) or set(transition) != {
             "id",
@@ -274,7 +296,12 @@ def validate_state(state: Any) -> dict[str, Any]:
         transition_at = parse_timestamp(transition["at"], "transition timestamp")
         if not created_at <= transition_at <= updated_at:
             raise StateError("transition timestamp falls outside the research run")
+        if transition_at < previous_transition_at:
+            raise StateError("transition timestamps must be chronological")
+        transition_times[transition["id"]] = transition_at
+        previous_transition_at = transition_at
 
+    previous_checkpoint_at = created_at
     for index, checkpoint in enumerate(state["checkpoints"], 1):
         if not isinstance(checkpoint, dict) or set(checkpoint) != {
             "id",
@@ -287,9 +314,7 @@ def validate_state(state: Any) -> dict[str, Any]:
             raise StateError("checkpoint is invalid")
         if checkpoint["id"] != f"checkpoint-{index:04d}":
             raise StateError("checkpoint id is invalid")
-        if checkpoint["transition_id"] not in {
-            transition["id"] for transition in state["transitions"]
-        }:
+        if checkpoint["transition_id"] not in transition_times:
             raise StateError("checkpoint references an unknown transition")
         for key in ("transition_id", "judgment", "next_action"):
             nonempty(checkpoint[key], f"checkpoint {key}")
@@ -302,8 +327,14 @@ def validate_state(state: Any) -> dict[str, Any]:
         checkpoint_at = parse_timestamp(checkpoint["at"], "checkpoint timestamp")
         if not created_at <= checkpoint_at <= updated_at:
             raise StateError("checkpoint timestamp falls outside the research run")
+        if checkpoint_at < transition_times[checkpoint["transition_id"]]:
+            raise StateError("checkpoint timestamp precedes its transition")
+        if checkpoint_at < previous_checkpoint_at:
+            raise StateError("checkpoint timestamps must be chronological")
+        previous_checkpoint_at = checkpoint_at
 
     terminal = state["terminal"]
+    terminal_at: datetime | None = None
     if terminal is not None:
         if not isinstance(terminal, dict) or set(terminal) != {
             "status",
@@ -322,7 +353,10 @@ def validate_state(state: Any) -> dict[str, Any]:
         terminal_at = parse_timestamp(terminal["at"], "terminal timestamp")
         if not created_at <= terminal_at <= updated_at:
             raise StateError("terminal timestamp falls outside the research run")
+        if terminal_at < max(previous_transition_at, previous_checkpoint_at):
+            raise StateError("terminal timestamp precedes recorded research activity")
 
+    previous_retro_at = terminal_at or max(previous_transition_at, previous_checkpoint_at)
     for retro in state["retro"]:
         if not isinstance(retro, dict) or set(retro) != {"trigger", "note", "at"}:
             raise StateError("retro is invalid")
@@ -332,6 +366,9 @@ def validate_state(state: Any) -> dict[str, Any]:
         retro_at = parse_timestamp(retro["at"], "retro timestamp")
         if not created_at <= retro_at <= updated_at:
             raise StateError("retro timestamp falls outside the research run")
+        if retro_at < previous_retro_at:
+            raise StateError("retro timestamps must follow the research lifecycle")
+        previous_retro_at = retro_at
     return state
 
 
@@ -436,82 +473,85 @@ def command_init(args: argparse.Namespace) -> dict[str, Any]:
     directory = resolve_state_dir(args.state_dir)
     state = new_state(args)
     path = state_path(directory, state["run_id"])
-    if path.exists():
-        raise StateError(f"research run already exists: {state['run_id']}")
-    validate_state(state)
-    atomic_write(path, state)
+    with run_lock(directory, state["run_id"]):
+        if path.exists():
+            raise StateError(f"research run already exists: {state['run_id']}")
+        validate_state(state)
+        atomic_write(path, state)
     return state
 
 
 def command_checkpoint(args: argparse.Namespace) -> dict[str, Any]:
     directory = resolve_state_dir(args.state_dir)
     path = state_path(directory, args.run_id)
-    state = load_state(path)
-    reject_if_terminal(state)
-    assign_working_sets(state, args)
-    transition_id = f"met-{len(state['transitions']) + 1:04d}"
-    timestamp = now()
-    judgment = nonempty(args.judgment, "judgment")
-    state["transitions"].append(
-        {
-            "id": transition_id,
-            "kind": args.kind,
-            "summary": nonempty(args.summary, "summary"),
-            "judgment": judgment,
-            "at": timestamp,
-        }
-    )
-    state["checkpoints"].append(
-        {
-            "id": f"checkpoint-{len(state['checkpoints']) + 1:04d}",
-            "transition_id": transition_id,
-            "judgment": judgment,
-            "next_action": nonempty(args.next_action, "next action"),
-            "risk_level": args.risk_level,
-            "at": timestamp,
-        }
-    )
-    state["current_judgment"] = judgment
-    state["updated_at"] = timestamp
-    validate_state(state)
-    atomic_write(path, state)
+    with run_lock(directory, args.run_id):
+        state = load_state(path)
+        reject_if_terminal(state)
+        assign_working_sets(state, args)
+        transition_id = f"met-{len(state['transitions']) + 1:04d}"
+        timestamp = now()
+        judgment = nonempty(args.judgment, "judgment")
+        state["transitions"].append(
+            {
+                "id": transition_id,
+                "kind": args.kind,
+                "summary": nonempty(args.summary, "summary"),
+                "judgment": judgment,
+                "at": timestamp,
+            }
+        )
+        state["checkpoints"].append(
+            {
+                "id": f"checkpoint-{len(state['checkpoints']) + 1:04d}",
+                "transition_id": transition_id,
+                "judgment": judgment,
+                "next_action": nonempty(args.next_action, "next action"),
+                "risk_level": args.risk_level,
+                "at": timestamp,
+            }
+        )
+        state["current_judgment"] = judgment
+        state["updated_at"] = timestamp
+        validate_state(state)
+        atomic_write(path, state)
     return state
 
 
 def command_finalize(args: argparse.Namespace) -> dict[str, Any]:
     directory = resolve_state_dir(args.state_dir)
     path = state_path(directory, args.run_id)
-    state = load_state(path)
-    reject_if_terminal(state)
-    if bool(args.retro_trigger) != bool(args.retro_note):
-        raise StateError("retro trigger and note must be supplied together")
-    restart_condition = args.restart_condition
-    if args.terminal in RESTART_REQUIRED:
-        if restart_condition is None:
-            raise StateError(f"{args.terminal} requires a concrete restart condition")
-        restart_condition = concrete_restart_condition(restart_condition)
-    elif restart_condition is not None:
-        restart_condition = concrete_restart_condition(restart_condition)
-    timestamp = now()
-    judgment = nonempty(args.judgment, "judgment")
-    state["current_judgment"] = judgment
-    state["terminal"] = {
-        "status": args.terminal,
-        "judgment": judgment,
-        "restart_condition": restart_condition,
-        "at": timestamp,
-    }
-    if args.retro_trigger:
-        state["retro"].append(
-            {
-                "trigger": args.retro_trigger,
-                "note": nonempty(args.retro_note, "retro note"),
-                "at": timestamp,
-            }
-        )
-    state["updated_at"] = timestamp
-    validate_state(state)
-    atomic_write(path, state)
+    with run_lock(directory, args.run_id):
+        state = load_state(path)
+        reject_if_terminal(state)
+        if bool(args.retro_trigger) != bool(args.retro_note):
+            raise StateError("retro trigger and note must be supplied together")
+        restart_condition = args.restart_condition
+        if args.terminal in RESTART_REQUIRED:
+            if restart_condition is None:
+                raise StateError(f"{args.terminal} requires a concrete restart condition")
+            restart_condition = concrete_restart_condition(restart_condition)
+        elif restart_condition is not None:
+            restart_condition = concrete_restart_condition(restart_condition)
+        timestamp = now()
+        judgment = nonempty(args.judgment, "judgment")
+        state["current_judgment"] = judgment
+        state["terminal"] = {
+            "status": args.terminal,
+            "judgment": judgment,
+            "restart_condition": restart_condition,
+            "at": timestamp,
+        }
+        if args.retro_trigger:
+            state["retro"].append(
+                {
+                    "trigger": args.retro_trigger,
+                    "note": nonempty(args.retro_note, "retro note"),
+                    "at": timestamp,
+                }
+            )
+        state["updated_at"] = timestamp
+        validate_state(state)
+        atomic_write(path, state)
     return state
 
 
