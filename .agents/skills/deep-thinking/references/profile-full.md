@@ -34,15 +34,23 @@ Each Research Run has a single writer. Concurrent writes fail immediately with
 killed while writing may leave `.<run-id>.lock`; remove it manually only after confirming
 that no writer is active. The tool never creates a global active mode.
 
+Finalize only after at least one material Checkpoint. The terminal judgment must equal the
+latest Checkpoint judgment; if the conclusion changes, record that change as a Checkpoint
+before finalizing. This keeps the final answer anchored to the recoverable history.
+
 Terminal values are `answered`, `conditionally_answered`, `unresolved_evidence_limit`,
 `blocked_access`, `stopped_budget`, and `invalidated_question`. An unresolved terminal
 needs a structured Restart Condition with an event type, subject, and observable condition.
 Free-form promises such as “get more information” are not Restart Conditions.
 
-The current state schema is version 3. The current CLI rejects version 1 and 2 state rather
-than guessing a migration; replay historical runs with their captured package. Every v3
-run records local Full activation provenance: profile, invocation ID, and an activation
-time equal to run creation. This is state provenance, not authenticated host-selection proof.
+The current state schema is version 4. The current CLI rejects version 1, 2, and 3 state
+rather than guessing a migration; replay historical runs with their captured package. Every
+v4 checkpoint stores the complete working-set snapshot used to recompute its declared
+transition. Snapshot arrays are canonicalized by record ID, and source lists by source text,
+so reordering does not count as a transition. One exact source may belong to only one
+independence group. Every run also records local Full activation provenance: profile,
+invocation ID, and an activation time equal to run creation. This is state provenance, not
+authenticated host-selection proof.
 
 Full uses a bounded Research Mandate instead of batch authorization. Reconfirm only when
 scope, cost, external side effect, high-risk information, or the research objective
