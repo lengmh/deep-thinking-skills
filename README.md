@@ -1,3 +1,5 @@
+![Deep Thinking](docs/assets/readme-header.svg)
+
 # Deep Thinking Skills
 
 `deep-thinking` 是一个用于科学与技术研究的 Agent Skill。它帮助核查证据、比较可能的解释，并完成可能改变结论的关键验证。证据充分后结束任务，避免无目的的重复检查。
