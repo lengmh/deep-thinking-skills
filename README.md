@@ -1,4 +1,24 @@
-![Deep Thinking](docs/assets/readme-header.svg)
+<p align="center">
+  <img src="docs/assets/readme-header.svg" alt="Deep Thinking" width="100%" />
+</p>
+
+<p align="center">
+  <strong>Stay with the question. Go beyond the first answer.</strong><br />
+  A research skill for following key uncertainties through reasoning, reading, search, and focused questions.
+</p>
+
+<p align="center">
+  <a href="https://github.com/lengmh/deep-thinking-skills/releases"><img src="https://img.shields.io/github/v/release/lengmh/deep-thinking-skills?style=flat-square" alt="Latest release" /></a>
+  <a href="https://github.com/lengmh/deep-thinking-skills/stargazers"><img src="https://img.shields.io/github/stars/lengmh/deep-thinking-skills?style=flat-square" alt="GitHub stars" /></a>
+  <a href="LICENSE"><img src="https://img.shields.io/github/license/lengmh/deep-thinking-skills?style=flat-square" alt="License: MIT" /></a>
+</p>
+
+<p align="center">
+  <a href="INSTALL.md">Quick Start</a> ·
+  <a href="#功能">Features</a> ·
+  <a href="#文档">Docs</a> ·
+  <a href="https://github.com/lengmh/deep-thinking-skills/releases">Releases</a>
+</p>
 
 # Deep Thinking Skills
 
