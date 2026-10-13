@@ -1,0 +1,211 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Deep Thinking Research Run",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "run_id",
+    "created_at",
+    "updated_at",
+    "research",
+    "claims",
+    "hypotheses",
+    "evidence",
+    "independence_groups",
+    "current_judgment",
+    "transitions",
+    "checkpoints",
+    "terminal",
+    "retro"
+  ],
+  "properties": {
+    "schema_version": {"const": 1},
+    "run_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,79}$"},
+    "created_at": {"type": "string", "format": "date-time"},
+    "updated_at": {"type": "string", "format": "date-time"},
+    "research": {"$ref": "#/$defs/research"},
+    "claims": {"type": "array", "items": {"$ref": "#/$defs/claim"}},
+    "hypotheses": {"type": "array", "items": {"$ref": "#/$defs/hypothesis"}},
+    "evidence": {"type": "array", "items": {"$ref": "#/$defs/evidence"}},
+    "independence_groups": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/independence_group"}
+    },
+    "current_judgment": {
+      "anyOf": [{"$ref": "#/$defs/non_empty_text"}, {"type": "null"}]
+    },
+    "transitions": {"type": "array", "items": {"$ref": "#/$defs/transition"}},
+    "checkpoints": {"type": "array", "items": {"$ref": "#/$defs/checkpoint"}},
+    "terminal": {"anyOf": [{"$ref": "#/$defs/terminal"}, {"type": "null"}]},
+    "retro": {"type": "array", "items": {"$ref": "#/$defs/retro"}}
+  },
+  "$defs": {
+    "non_empty_text": {"type": "string", "minLength": 1},
+    "research": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["question", "decision_goal", "mandate"],
+      "properties": {
+        "question": {"$ref": "#/$defs/non_empty_text"},
+        "decision_goal": {"$ref": "#/$defs/non_empty_text"},
+        "mandate": {"$ref": "#/$defs/mandate"}
+      }
+    },
+    "mandate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["scope", "cost_boundary", "external_effects"],
+      "properties": {
+        "scope": {"$ref": "#/$defs/non_empty_text"},
+        "cost_boundary": {
+          "anyOf": [{"$ref": "#/$defs/non_empty_text"}, {"type": "null"}]
+        },
+        "external_effects": {"type": "boolean"}
+      }
+    },
+    "claim": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "kind", "text"],
+      "properties": {
+        "id": {"$ref": "#/$defs/non_empty_text"},
+        "kind": {
+          "enum": ["verified_fact", "user_claim", "inference", "assumption", "unknown"]
+        },
+        "text": {"$ref": "#/$defs/non_empty_text"}
+      }
+    },
+    "hypothesis": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "summary", "status"],
+      "properties": {
+        "id": {"$ref": "#/$defs/non_empty_text"},
+        "summary": {"$ref": "#/$defs/non_empty_text"},
+        "status": {"enum": ["active", "eliminated"]}
+      }
+    },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "source", "source_group", "effect"],
+      "properties": {
+        "id": {"$ref": "#/$defs/non_empty_text"},
+        "source": {"$ref": "#/$defs/non_empty_text"},
+        "source_group": {"$ref": "#/$defs/non_empty_text"},
+        "effect": {"enum": ["support", "weaken", "no_effect"]}
+      }
+    },
+    "independence_group": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "sources"],
+      "properties": {
+        "id": {"$ref": "#/$defs/non_empty_text"},
+        "sources": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"$ref": "#/$defs/non_empty_text"}
+        }
+      }
+    },
+    "transition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "kind", "summary", "judgment", "at"],
+      "properties": {
+        "id": {"type": "string", "pattern": "^met-[0-9]{4}$"},
+        "kind": {
+          "enum": [
+            "hypothesis_added",
+            "hypothesis_eliminated",
+            "evidence_changed_judgment",
+            "evidence_independence_changed",
+            "unknown_resolved",
+            "risk_or_action_changed"
+          ]
+        },
+        "summary": {"$ref": "#/$defs/non_empty_text"},
+        "judgment": {"$ref": "#/$defs/non_empty_text"},
+        "at": {"type": "string", "format": "date-time"}
+      }
+    },
+    "checkpoint": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "transition_id", "judgment", "next_action", "risk_level", "at"],
+      "properties": {
+        "id": {"type": "string", "pattern": "^checkpoint-[0-9]{4}$"},
+        "transition_id": {"type": "string", "pattern": "^met-[0-9]{4}$"},
+        "judgment": {"$ref": "#/$defs/non_empty_text"},
+        "next_action": {"$ref": "#/$defs/non_empty_text"},
+        "risk_level": {"enum": ["low", "medium", "high"]},
+        "at": {"type": "string", "format": "date-time"}
+      }
+    },
+    "terminal": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "judgment", "restart_condition", "at"],
+      "properties": {
+        "status": {
+          "enum": [
+            "answered",
+            "conditionally_answered",
+            "unresolved_evidence_limit",
+            "blocked_access",
+            "stopped_budget",
+            "invalidated_question"
+          ]
+        },
+        "judgment": {"$ref": "#/$defs/non_empty_text"},
+        "restart_condition": {
+          "anyOf": [{"$ref": "#/$defs/non_empty_text"}, {"type": "null"}]
+        },
+        "at": {"type": "string", "format": "date-time"}
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "enum": [
+                  "unresolved_evidence_limit",
+                  "blocked_access",
+                  "stopped_budget"
+                ]
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "restart_condition": {"$ref": "#/$defs/non_empty_text"}
+            }
+          }
+        }
+      ]
+    },
+    "retro": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["trigger", "note", "at"],
+      "properties": {
+        "trigger": {
+          "enum": [
+            "major_reversal",
+            "user_found_error",
+            "source_invalidated",
+            "evaluator_disagreement",
+            "protocol_exception",
+            "abnormal_stop",
+            "high_impact_error",
+            "method_to_preserve"
+          ]
+        },
+        "note": {"$ref": "#/$defs/non_empty_text"},
+        "at": {"type": "string", "format": "date-time"}
+      }
+    }
+  }
+}
