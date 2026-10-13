@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+from copy import deepcopy
 from contextlib import contextmanager
 import json
 import os
@@ -16,8 +17,13 @@ from pathlib import Path
 from typing import Any
 
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 3
 RUN_ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,79}$")
+WINDOWS_RESERVED_BASENAMES = frozenset(
+    {"CON", "PRN", "AUX", "NUL"}
+    | {f"COM{number}" for number in range(1, 10)}
+    | {f"LPT{number}" for number in range(1, 10)}
+)
 CLAIM_KINDS = frozenset(
     {"verified_fact", "user_claim", "inference", "assumption", "unknown"}
 )
@@ -56,22 +62,27 @@ RETRO_TRIGGERS = frozenset(
         "method_to_preserve",
     }
 )
-VAGUE_RESTART_PHRASES = (
-    "more information",
-    "further investigation",
-    "investigate further",
-    "further research",
-    "do more research",
-    "when more is known",
-    "retry later",
-    "try again later",
-    "更多信息",
-    "进一步调查",
-    "继续调查",
-    "有新资料后重试",
-    "获得新资料后重试",
-    "以后重试",
-    "稍后重试",
+RESTART_EVENTS_BY_TERMINAL = {
+    "unresolved_evidence_limit": frozenset(
+        {"evidence_published", "dependency_completed", "constraint_changed"}
+    ),
+    "blocked_access": frozenset({"access_granted", "dependency_completed"}),
+    "stopped_budget": frozenset({"budget_restored", "constraint_changed"}),
+}
+RESTART_EVENTS = frozenset().union(*RESTART_EVENTS_BY_TERMINAL.values())
+WORKING_SET_KEYS = (
+    "claims",
+    "hypotheses",
+    "evidence",
+    "independence_groups",
+)
+CHANGE_DIMENSIONS = frozenset(
+    {
+        *WORKING_SET_KEYS,
+        "judgment",
+        "next_action",
+        "risk_level",
+    }
 )
 
 
@@ -117,6 +128,8 @@ def validate_run_id(run_id: Any) -> str:
         raise StateError("run id must be a string")
     if not RUN_ID_RE.fullmatch(run_id):
         raise StateError("run id must use letters, numbers, dot, underscore, or hyphen")
+    if run_id.endswith(".") or run_id.split(".", 1)[0].upper() in WINDOWS_RESERVED_BASENAMES:
+        raise StateError("run id is not a portable filename")
     return run_id
 
 
@@ -217,19 +230,49 @@ def validate_items(state: dict[str, Any]) -> None:
             nonempty(source, "independence group source")
     assert_unique_ids(state["independence_groups"], "independence group")
 
-    group_ids = {group["id"] for group in state["independence_groups"]}
-    if any(item["source_group"] not in group_ids for item in state["evidence"]):
-        raise StateError("evidence references an unknown independence group")
+    groups = {group["id"]: set(group["sources"]) for group in state["independence_groups"]}
+    for item in state["evidence"]:
+        if item["source_group"] not in groups:
+            raise StateError("evidence references an unknown independence group")
+        if item["source"] not in groups[item["source_group"]]:
+            raise StateError("evidence source is not a member of its independence group")
+
+
+def validate_transition_changes(kind: str, changes: list[str]) -> None:
+    required = {
+        "hypothesis_added": {"hypotheses"},
+        "hypothesis_eliminated": {"hypotheses"},
+        "evidence_changed_judgment": {"evidence", "judgment"},
+        "unknown_resolved": {"claims"},
+    }
+    if kind in required and not required[kind].issubset(changes):
+        raise StateError(f"{kind} transition changes do not match its kind")
+    if kind == "evidence_independence_changed" and not {
+        "evidence",
+        "independence_groups",
+    }.intersection(changes):
+        raise StateError("evidence_independence_changed requires a source grouping change")
+    if kind == "risk_or_action_changed" and not {
+        "next_action",
+        "risk_level",
+    }.intersection(changes):
+        raise StateError("risk_or_action_changed requires a risk or action change")
 
 
 def validate_state(state: Any) -> dict[str, Any]:
     if not isinstance(state, dict):
         raise StateError("state must be an object")
+    if state.get("schema_version") in {1, 2}:
+        raise StateError(
+            f"legacy schema_version {state['schema_version']} must be replayed "
+            "with its captured package"
+        )
     required = {
         "schema_version",
         "run_id",
         "created_at",
         "updated_at",
+        "activation",
         "research",
         "claims",
         "hypotheses",
@@ -248,6 +291,18 @@ def validate_state(state: Any) -> dict[str, Any]:
     updated_at = parse_timestamp(state["updated_at"], "updated_at")
     if updated_at < created_at:
         raise StateError("updated_at cannot be earlier than created_at")
+    activation = state["activation"]
+    if not isinstance(activation, dict) or set(activation) != {
+        "profile",
+        "invocation_id",
+        "started_at",
+    }:
+        raise StateError("activation provenance is invalid")
+    if activation["profile"] != "full":
+        raise StateError("Research Run activation profile must be full")
+    validate_run_id(activation["invocation_id"])
+    if parse_timestamp(activation["started_at"], "activation started_at") != created_at:
+        raise StateError("activation started_at must equal created_at")
 
     research = state["research"]
     if not isinstance(research, dict) or set(research) != {"question", "decision_goal", "mandate"}:
@@ -282,6 +337,7 @@ def validate_state(state: Any) -> dict[str, Any]:
             "kind",
             "summary",
             "judgment",
+            "changes",
             "at",
         }:
             raise StateError("transition is invalid")
@@ -293,6 +349,14 @@ def validate_state(state: Any) -> dict[str, Any]:
             raise StateError("transition id or kind is invalid")
         for key in ("summary", "judgment"):
             nonempty(transition[key], f"transition {key}")
+        if (
+            not isinstance(transition["changes"], list)
+            or not transition["changes"]
+            or any(change not in CHANGE_DIMENSIONS for change in transition["changes"])
+            or len(set(transition["changes"])) != len(transition["changes"])
+        ):
+            raise StateError("transition changes are invalid")
+        validate_transition_changes(transition["kind"], transition["changes"])
         transition_at = parse_timestamp(transition["at"], "transition timestamp")
         if not created_at <= transition_at <= updated_at:
             raise StateError("transition timestamp falls outside the research run")
@@ -301,7 +365,13 @@ def validate_state(state: Any) -> dict[str, Any]:
         transition_times[transition["id"]] = transition_at
         previous_transition_at = transition_at
 
+    if len(state["transitions"]) != len(state["checkpoints"]):
+        raise StateError("each transition must have exactly one checkpoint")
+
     previous_checkpoint_at = created_at
+    previous_judgment: str | None = None
+    previous_next_action: str | None = None
+    previous_risk_level: str | None = None
     for index, checkpoint in enumerate(state["checkpoints"], 1):
         if not isinstance(checkpoint, dict) or set(checkpoint) != {
             "id",
@@ -314,7 +384,7 @@ def validate_state(state: Any) -> dict[str, Any]:
             raise StateError("checkpoint is invalid")
         if checkpoint["id"] != f"checkpoint-{index:04d}":
             raise StateError("checkpoint id is invalid")
-        if checkpoint["transition_id"] not in transition_times:
+        if checkpoint["transition_id"] != f"met-{index:04d}":
             raise StateError("checkpoint references an unknown transition")
         for key in ("transition_id", "judgment", "next_action"):
             nonempty(checkpoint[key], f"checkpoint {key}")
@@ -331,6 +401,22 @@ def validate_state(state: Any) -> dict[str, Any]:
             raise StateError("checkpoint timestamp precedes its transition")
         if checkpoint_at < previous_checkpoint_at:
             raise StateError("checkpoint timestamps must be chronological")
+        transition = state["transitions"][index - 1]
+        if checkpoint["judgment"] != transition["judgment"]:
+            raise StateError("checkpoint judgment must match its transition")
+        comparisons = {
+            "judgment": (previous_judgment, checkpoint["judgment"]),
+            "next_action": (previous_next_action, checkpoint["next_action"]),
+            "risk_level": (previous_risk_level, checkpoint["risk_level"]),
+        }
+        for dimension, (before, after) in comparisons.items():
+            if (before != after) != (dimension in transition["changes"]):
+                raise StateError(
+                    f"transition {dimension} change does not match checkpoint history"
+                )
+        previous_judgment = checkpoint["judgment"]
+        previous_next_action = checkpoint["next_action"]
+        previous_risk_level = checkpoint["risk_level"]
         previous_checkpoint_at = checkpoint_at
 
     terminal = state["terminal"]
@@ -346,15 +432,19 @@ def validate_state(state: Any) -> dict[str, Any]:
         if not isinstance(terminal["status"], str) or terminal["status"] not in TERMINALS:
             raise StateError("terminal status is invalid")
         nonempty(terminal["judgment"], "terminal judgment")
-        if terminal["status"] in RESTART_REQUIRED and not terminal["restart_condition"]:
+        if terminal["status"] in RESTART_REQUIRED and terminal["restart_condition"] is None:
             raise StateError("terminal requires a restart condition")
         if terminal["restart_condition"] is not None:
-            concrete_restart_condition(terminal["restart_condition"])
+            validate_restart_condition(terminal["restart_condition"], terminal["status"])
+        if state["current_judgment"] != terminal["judgment"]:
+            raise StateError("current judgment must match the terminal judgment")
         terminal_at = parse_timestamp(terminal["at"], "terminal timestamp")
         if not created_at <= terminal_at <= updated_at:
             raise StateError("terminal timestamp falls outside the research run")
         if terminal_at < max(previous_transition_at, previous_checkpoint_at):
             raise StateError("terminal timestamp precedes recorded research activity")
+    elif state["current_judgment"] != previous_judgment:
+        raise StateError("current judgment must match the latest checkpoint")
 
     previous_retro_at = terminal_at or max(previous_transition_at, previous_checkpoint_at)
     for retro in state["retro"]:
@@ -400,24 +490,38 @@ def atomic_write(path: Path, state: dict[str, Any]) -> None:
             os.unlink(temp_name)
 
 
-def load_state(path: Path) -> dict[str, Any]:
+def load_state(path: Path, expected_run_id: str) -> dict[str, Any]:
+    expected_run_id = validate_run_id(expected_run_id)
+    if path.name != f"{expected_run_id}.json":
+        raise StateError("filename and requested run id do not match")
     if not path.is_file():
-        raise StateError(f"research run does not exist: {path.stem}")
+        raise StateError(f"research run does not exist: {expected_run_id}")
     try:
         state = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
         raise StateError(f"cannot read research run: {exc}") from exc
-    return validate_state(state)
+    state = validate_state(state)
+    if state["run_id"] != expected_run_id:
+        raise StateError("payload and requested run id do not match")
+    return state
 
 
 def new_state(args: argparse.Namespace) -> dict[str, Any]:
     run_id = validate_run_id(args.run_id or f"run-{uuid.uuid4().hex}")
+    invocation_id = validate_run_id(
+        args.invocation_id or f"invocation-{uuid.uuid4().hex}"
+    )
     timestamp = now()
     return {
         "schema_version": SCHEMA_VERSION,
         "run_id": run_id,
         "created_at": timestamp,
         "updated_at": timestamp,
+        "activation": {
+            "profile": "full",
+            "invocation_id": invocation_id,
+            "started_at": timestamp,
+        },
         "research": {
             "question": nonempty(args.question, "question"),
             "decision_goal": nonempty(args.decision_goal, "decision goal"),
@@ -461,12 +565,114 @@ def reject_if_terminal(state: dict[str, Any]) -> None:
         raise StateError("research run is already finalized")
 
 
-def concrete_restart_condition(value: Any) -> str:
-    value = nonempty(value, "restart condition")
-    normalized = " ".join(value.casefold().strip(" .。；;").split())
-    if any(phrase in normalized for phrase in VAGUE_RESTART_PHRASES):
-        raise StateError("restart condition must name a concrete event, not a vague future inquiry")
-    return value
+def validate_restart_condition(value: Any, terminal: str) -> dict[str, str]:
+    if not isinstance(value, dict) or set(value) != {
+        "event_type",
+        "subject",
+        "observable_condition",
+    }:
+        raise StateError(
+            "restart condition must contain event_type, subject, and observable_condition"
+        )
+    event_type = nonempty(value["event_type"], "restart event type")
+    subject = nonempty(value["subject"], "restart subject")
+    observable = nonempty(value["observable_condition"], "restart observable condition")
+    allowed = RESTART_EVENTS_BY_TERMINAL.get(terminal, RESTART_EVENTS)
+    if event_type not in allowed:
+        raise StateError(f"restart event type is invalid for terminal {terminal}")
+    return {
+        "event_type": event_type,
+        "subject": subject,
+        "observable_condition": observable,
+    }
+
+
+def build_restart_condition(args: argparse.Namespace) -> dict[str, str] | None:
+    values = (args.restart_event, args.restart_subject, args.restart_condition)
+    if not any(value is not None for value in values):
+        return None
+    if not all(value is not None for value in values):
+        raise StateError(
+            "restart event, subject, and observable condition must be supplied together"
+        )
+    return validate_restart_condition(
+        {
+            "event_type": args.restart_event,
+            "subject": args.restart_subject,
+            "observable_condition": args.restart_condition,
+        },
+        args.terminal,
+    )
+
+
+def transition_delta(
+    before: dict[str, Any],
+    after: dict[str, Any],
+    kind: str,
+    judgment: str,
+    next_action: str,
+    risk_level: str,
+) -> list[str]:
+    changes = {key for key in WORKING_SET_KEYS if before[key] != after[key]}
+    previous_checkpoint = before["checkpoints"][-1] if before["checkpoints"] else None
+    previous = {
+        "judgment": before["current_judgment"],
+        "next_action": previous_checkpoint["next_action"] if previous_checkpoint else None,
+        "risk_level": previous_checkpoint["risk_level"] if previous_checkpoint else None,
+    }
+    current = {
+        "judgment": judgment,
+        "next_action": next_action,
+        "risk_level": risk_level,
+    }
+    changes.update(key for key in current if previous[key] != current[key])
+
+    before_hypotheses = {item["id"]: item for item in before["hypotheses"]}
+    after_hypotheses = {item["id"]: item for item in after["hypotheses"]}
+    before_claims = {item["id"]: item for item in before["claims"]}
+    after_claims = {item["id"]: item for item in after["claims"]}
+    before_independence = {
+        (item["id"], item["source"], item["source_group"])
+        for item in before["evidence"]
+    }
+    after_independence = {
+        (item["id"], item["source"], item["source_group"])
+        for item in after["evidence"]
+    }
+
+    if kind == "hypothesis_added" and not (after_hypotheses.keys() - before_hypotheses.keys()):
+        raise StateError("hypothesis_added requires a newly added hypothesis")
+    if kind == "hypothesis_eliminated" and not any(
+        item["status"] == "active"
+        and after_hypotheses.get(item_id, {}).get("status") == "eliminated"
+        for item_id, item in before_hypotheses.items()
+    ):
+        raise StateError("hypothesis_eliminated requires an active hypothesis to be eliminated")
+    if kind == "evidence_changed_judgment" and not {
+        "evidence",
+        "judgment",
+    }.issubset(changes):
+        raise StateError("evidence_changed_judgment requires evidence and judgment changes")
+    if kind == "evidence_independence_changed" and not (
+        before["independence_groups"] != after["independence_groups"]
+        or before_independence != after_independence
+    ):
+        raise StateError(
+            "evidence_independence_changed requires a changed source grouping"
+        )
+    if kind == "unknown_resolved" and not any(
+        item["kind"] == "unknown"
+        and after_claims.get(item_id, {}).get("kind") not in {None, "unknown"}
+        for item_id, item in before_claims.items()
+    ):
+        raise StateError("unknown_resolved requires an unknown claim to be reclassified")
+    if kind == "risk_or_action_changed" and not changes.intersection(
+        {"next_action", "risk_level"}
+    ):
+        raise StateError("risk_or_action_changed requires a changed risk level or next action")
+    if not changes:
+        raise StateError("checkpoint requires a material epistemic state change")
+    return sorted(changes)
 
 
 def command_init(args: argparse.Namespace) -> dict[str, Any]:
@@ -485,18 +691,30 @@ def command_checkpoint(args: argparse.Namespace) -> dict[str, Any]:
     directory = resolve_state_dir(args.state_dir)
     path = state_path(directory, args.run_id)
     with run_lock(directory, args.run_id):
-        state = load_state(path)
+        state = load_state(path, args.run_id)
         reject_if_terminal(state)
+        before = deepcopy(state)
         assign_working_sets(state, args)
+        validate_items(state)
         transition_id = f"met-{len(state['transitions']) + 1:04d}"
         timestamp = now()
         judgment = nonempty(args.judgment, "judgment")
+        next_action = nonempty(args.next_action, "next action")
+        changes = transition_delta(
+            before,
+            state,
+            args.kind,
+            judgment,
+            next_action,
+            args.risk_level,
+        )
         state["transitions"].append(
             {
                 "id": transition_id,
                 "kind": args.kind,
                 "summary": nonempty(args.summary, "summary"),
                 "judgment": judgment,
+                "changes": changes,
                 "at": timestamp,
             }
         )
@@ -505,7 +723,7 @@ def command_checkpoint(args: argparse.Namespace) -> dict[str, Any]:
                 "id": f"checkpoint-{len(state['checkpoints']) + 1:04d}",
                 "transition_id": transition_id,
                 "judgment": judgment,
-                "next_action": nonempty(args.next_action, "next action"),
+                "next_action": next_action,
                 "risk_level": args.risk_level,
                 "at": timestamp,
             }
@@ -521,17 +739,14 @@ def command_finalize(args: argparse.Namespace) -> dict[str, Any]:
     directory = resolve_state_dir(args.state_dir)
     path = state_path(directory, args.run_id)
     with run_lock(directory, args.run_id):
-        state = load_state(path)
+        state = load_state(path, args.run_id)
         reject_if_terminal(state)
         if bool(args.retro_trigger) != bool(args.retro_note):
             raise StateError("retro trigger and note must be supplied together")
-        restart_condition = args.restart_condition
+        restart_condition = build_restart_condition(args)
         if args.terminal in RESTART_REQUIRED:
             if restart_condition is None:
                 raise StateError(f"{args.terminal} requires a concrete restart condition")
-            restart_condition = concrete_restart_condition(restart_condition)
-        elif restart_condition is not None:
-            restart_condition = concrete_restart_condition(restart_condition)
         timestamp = now()
         judgment = nonempty(args.judgment, "judgment")
         state["current_judgment"] = judgment
@@ -556,7 +771,10 @@ def command_finalize(args: argparse.Namespace) -> dict[str, Any]:
 
 
 def command_resume(args: argparse.Namespace) -> dict[str, Any]:
-    return load_state(state_path(resolve_state_dir(args.state_dir), args.run_id))
+    return load_state(
+        state_path(resolve_state_dir(args.state_dir), args.run_id),
+        args.run_id,
+    )
 
 
 def command_validate(args: argparse.Namespace) -> dict[str, Any]:
@@ -576,6 +794,7 @@ def build_parser() -> argparse.ArgumentParser:
     init = subparsers.add_parser("init")
     add_state_location(init, run_id=False)
     init.add_argument("--run-id")
+    init.add_argument("--invocation-id")
     init.add_argument("--question", required=True)
     init.add_argument("--decision-goal", required=True)
     init.add_argument("--scope", required=True)
@@ -600,6 +819,8 @@ def build_parser() -> argparse.ArgumentParser:
     add_state_location(finalize)
     finalize.add_argument("--terminal", choices=sorted(TERMINALS), required=True)
     finalize.add_argument("--judgment", required=True)
+    finalize.add_argument("--restart-event", choices=sorted(RESTART_EVENTS))
+    finalize.add_argument("--restart-subject")
     finalize.add_argument("--restart-condition")
     finalize.add_argument("--retro-trigger", choices=sorted(RETRO_TRIGGERS))
     finalize.add_argument("--retro-note")

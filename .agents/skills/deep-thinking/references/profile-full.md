@@ -1,5 +1,17 @@
 # Full profile
 
+```json
+{
+  "contract": "deep-thinking-profile-v1",
+  "profile": "full",
+  "research_run": "required",
+  "checkpoint": "material_transition",
+  "typed_terminal": "required",
+  "retro": "trigger_only",
+  "state_tool": "required"
+}
+```
+
 Full is selected only by an explicit `$deep-thinking full` invocation. It uses the
 shared kernel and records a separate, recoverable Research Run. Its center is epistemic
 state, not a tool log.
@@ -19,7 +31,13 @@ that no writer is active. The tool never creates a global active mode.
 
 Terminal values are `answered`, `conditionally_answered`, `unresolved_evidence_limit`,
 `blocked_access`, `stopped_budget`, and `invalidated_question`. An unresolved terminal
-needs a concrete event-based Restart Condition, not “get more information”.
+needs a structured Restart Condition with an event type, subject, and observable condition.
+Free-form promises such as “get more information” are not Restart Conditions.
+
+The current state schema is version 3. The current CLI rejects version 1 and 2 state rather
+than guessing a migration; replay historical runs with their captured package. Every v3
+run records local Full activation provenance: profile, invocation ID, and an activation
+time equal to run creation. This is state provenance, not authenticated host-selection proof.
 
 Full uses a bounded Research Mandate instead of batch authorization. Reconfirm only when
 scope, cost, external side effect, high-risk information, or the research objective

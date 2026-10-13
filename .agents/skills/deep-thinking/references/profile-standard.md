@@ -1,5 +1,17 @@
 # Standard profile
 
+```json
+{
+  "contract": "deep-thinking-profile-v1",
+  "profile": "standard",
+  "research_run": "forbidden",
+  "checkpoint": "event_only",
+  "typed_terminal": "forbidden",
+  "retro": "forbidden",
+  "state_tool": "forbidden"
+}
+```
+
 Standard is the default for an explicit invocation. It uses the shared kernel and may
 keep a minimal working state: current question, current judgment, active hypotheses,
 decision-relevant evidence, most important unknown, and next valuable action.
@@ -14,4 +26,5 @@ research merely to create state.
 Ask for explicit control only before irreversible external writes, clearly high-cost work,
 material scope expansion, new high-risk or sensitive information, or a point where user
 input could materially redirect the research. Do not create a long-lived ledger unless
-continuity across compression, handoff, or recovery genuinely needs one minimal checkpoint.
+continuity across compression, handoff, or recovery genuinely needs one minimal checkpoint
+inside the current request. Never create a durable Research Run or use the Full state tool.

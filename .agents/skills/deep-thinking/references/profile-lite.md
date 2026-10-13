@@ -1,5 +1,17 @@
 # Lite profile
 
+```json
+{
+  "contract": "deep-thinking-profile-v1",
+  "profile": "lite",
+  "research_run": "forbidden",
+  "checkpoint": "forbidden",
+  "typed_terminal": "forbidden",
+  "retro": "forbidden",
+  "state_tool": "forbidden"
+}
+```
+
 Lite is prompt-only. Use the shared epistemic kernel, challenge the key assumption,
 consider the strongest alternative, and give a clear judgment with a reversal condition.
 
