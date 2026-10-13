@@ -117,8 +117,7 @@ def default_state_dir() -> Path:
 
 def resolve_state_dir(value: str | None) -> Path:
     directory = Path(value).expanduser() if value else default_state_dir()
-    directory.mkdir(parents=True, exist_ok=True)
-    if not directory.is_dir():
+    if directory.exists() and not directory.is_dir():
         raise StateError(f"state directory is not a directory: {directory}")
     return directory.resolve()
 
@@ -764,6 +763,7 @@ def command_init(args: argparse.Namespace) -> dict[str, Any]:
     directory = resolve_state_dir(args.state_dir)
     state = new_state(args)
     path = state_path(directory, state["run_id"])
+    directory.mkdir(parents=True, exist_ok=True)
     with run_lock(directory, state["run_id"]):
         if path.exists():
             raise StateError(f"research run already exists: {state['run_id']}")
@@ -834,7 +834,7 @@ def command_finalize(args: argparse.Namespace) -> dict[str, Any]:
         restart_condition = build_restart_condition(args)
         if args.terminal in RESTART_REQUIRED:
             if restart_condition is None:
-                raise StateError(f"{args.terminal} requires a concrete restart condition")
+                raise StateError(f"{args.terminal} requires a structured restart condition")
         timestamp = now()
         judgment = nonempty(args.judgment, "judgment")
         if judgment != state["checkpoints"][-1]["judgment"]:
