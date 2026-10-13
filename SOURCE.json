@@ -30,5 +30,15 @@
   },
   "source_history_imported": false,
   "raw_experiment_material_distributed": false,
-  "new_full_profile_L3_qualification": false
+  "new_full_profile_L3_qualification": false,
+  "curated_product_history": {
+    "documentation": "docs/HISTORY.md",
+    "mapping": "docs/history.json",
+    "history_branch": "history/product-evolution",
+    "snapshot_count": 10,
+    "method": "new allowlisted snapshot commits, merged without rewriting published history",
+    "source_git_history_imported": false,
+    "historical_versions_requalified": false,
+    "source_author_identity_imported": false
+  }
 }
