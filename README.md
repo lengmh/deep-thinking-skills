@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/assets/readme-header.svg" alt="Deep Thinking" width="100%" />
+  <img src="docs/assets/readme-header.png" alt="Deep Thinking" width="100%" />
 </p>
 
 <p align="center">
